@@ -26,41 +26,56 @@ const handler = async (req, res) => {
         endpointSecret,
       });
     } catch (e) {
-      console.log('ERROR: ', e);
+      console.error('Error verifying Stripe webhook:', e);
+      res.status(400).json({ error: 'Webhook verification failed' });
+      return;
     }
 
     switch (event.type) {
       case 'payment_intent.succeeded': {
         const client = await clientPromise;
-        const db = client.db('BlogStandard');
+        try {
+          const db = client.db('BlogStandard');
 
-        const paymentIntent = event.data.object;
-        const auth0Id = paymentIntent.metadata.sub;
+          const paymentIntent = event.data.object;
+          const auth0Id = paymentIntent.metadata.sub;
 
-        console.log('AUTH 0 ID: ', paymentIntent);
+          console.log('Received payment_intent.succeeded event. Auth0 ID:', auth0Id);
 
-        const userProfile = await db.collection('users').updateOne(
-          {
-            auth0Id,
-          },
-          {
-            $inc: {
-              availableTokens: 10,
-            },
-            $setOnInsert: {
+          const userProfile = await db.collection('users').updateOne(
+            {
               auth0Id,
             },
-          },
-          {
-            upsert: true,
-          }
-        );
+            {
+              $inc: {
+                availableTokens: 10,
+              },
+              $setOnInsert: {
+                auth0Id,
+              },
+            },
+            {
+              upsert: true,
+            }
+          );
+
+          console.log('User profile updated:', userProfile);
+        } catch (error) {
+          console.error('Error updating user profile in MongoDB:', error);
+          res.status(500).json({ error: 'Internal server error' });
+          return;
+        }
+        break;
       }
       default:
-        console.log('UNHANDLED EVENT: ', event.type);
+        console.log('Unhandled event type:', event.type);
     }
+
     res.status(200).json({ received: true });
+  } else {
+    res.status(405).json({ error: 'Method Not Allowed' });
   }
 };
 
 export default cors(handler);
+

@@ -16,7 +16,7 @@
     "@next/font": "^13.1.6",
     "@webdeveducation/next-verify-stripe": "^1.0.1",
     "micro-cors": "^0.1.1",
-    "mongodb": "^4.13.0",
+    "mongodb": "^4.17.2",
     "next": "13.1.6",
     "numeral": "^2.0.6",
     "openai": "^3.2.1",
